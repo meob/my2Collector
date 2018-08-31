@@ -1,12 +1,12 @@
 # my2Collector
 My2Collector (my2) is a simple, self contained MySQL statistics collector
 
-##MySQL Statisctics Collector
+## MySQL Statistics Collector
 Most intresting MySQL performance data is available in the GLOBAL_STATUS view,
 but MySQL does not mantain any history of it.
 My2Collector (my2) is a simple, self contained MySQL statistics collector.
-my2 creates in the my2 schema a table that contain the history of performance statistics.
-my2 automatically execute every 10 minutes a Stored Routine to collect data.
+my2 creates in the my2 schema a table that contains the history of performance statistics.
+my2 every 10 minutes automatically executes a Stored Routine to collect data.
 
 ## Install my2
 
@@ -38,7 +38,7 @@ my2.status adds a third column `timest` with the timestamp
 ### Statistics usage
 
 	SELECT variable_value+0 as value, timest as time_sec
-	  FROM my.status
+	  FROM my2.status
 	 WHERE variable_name='THREADS_CONNECTED'
 	 ORDER BY timest ASC;
 
@@ -52,3 +52,4 @@ PROCESSLIST table is available since 5.1.7 while GLOBAL_STATUS is available sinc
 The PERFORMANCE_SCHEMA was introduced in 5.5 version and greatly enhanched in 5.6 version.
 There are many little differences between different MySQL versions: My2 is aware of them
 and tries to collect all the information available.
+My2 gives its best with MySQL 5.7, MySQL 8.0 and MariaDB 10.x with performance schema enabled.
