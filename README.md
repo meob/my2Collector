@@ -2,11 +2,11 @@
 My2Collector (my2) is a simple, self contained MySQL statistics collector
 
 ## MySQL Statistics Collector
-Most intresting MySQL performance data is available in the GLOBAL_STATUS view,
+Most intresting performance data is available in the GLOBAL_STATUS system table,
 but MySQL does not mantain any history of it.
 My2Collector (my2) is a simple, self contained MySQL statistics collector.
 my2 creates in the my2 schema a table that contains the history of performance statistics.
-my2 every 10 minutes automatically executes a Stored Routine to collect data.
+my2 automatically executes a Stored Routine every 10 minutes to collect data.
 
 ## Install my2
 
@@ -31,8 +31,9 @@ my2.status adds a third column `timest` with the timestamp
 * Some PROCESSLIST information (eg. USER, HOST, COMMAND, STATE)
 * Some summary statistic (eg. sum_timer_wait from events_statements_summary_global_by_event_name)
 * Some GLOBAL_VARIABLE variables
+* Delta values for most used counters
 * Database size (this statistic is collected daily and not every 10 minutes)
-* ...
+* And other useful stats...
 
 
 ### Statistics usage
@@ -45,11 +46,11 @@ my2.status adds a third column `timest` with the timestamp
 
 ## Version support
 
-My2 can connect to any version of MySQL, MariaDB, Percona, or other forks but...
+my2 can connect to any version of MySQL, MariaDB, Percona, or other forks but...
 with old MySQL releases many statistics not available.
-My2 Collector uses a Scheduled Job which is available since MySQL 5.1.
+my2 uses a Scheduled Job which is available since MySQL 5.1 (2008).
 PROCESSLIST table is available since 5.1.7 while GLOBAL_STATUS is available since 5.1.12.
 The PERFORMANCE_SCHEMA was introduced in 5.5 version and greatly enhanched in 5.6 version.
 There are many little differences between different MySQL versions: My2 is aware of them
 and tries to collect all the information available.
-My2 gives its best with MySQL 5.7, MySQL 8.0 and MariaDB 10.x with performance schema enabled.
+my2 gives its best with MySQL 5.7, MySQL 8.0 and MariaDB 10.x with performance schema enabled.
