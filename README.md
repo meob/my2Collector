@@ -2,7 +2,7 @@
 My2Collector (my2) is a simple, self contained MySQL statistics collector
 
 ## MySQL Statistics Collector
-Most intresting performance data is available in the GLOBAL_STATUS system table,
+Most intresting MySQL performance data is available in the GLOBAL_STATUS system table,
 but MySQL does not mantain any history of it.
 My2Collector (my2) is a simple, self contained MySQL statistics collector.
 my2 creates in the my2 schema a table that contains the history of performance statistics.
