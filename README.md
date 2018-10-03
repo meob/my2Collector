@@ -5,14 +5,17 @@ My2Collector (my2) is a simple, self contained MySQL statistics collector
 Most intresting MySQL performance data is available in the GLOBAL_STATUS system table,
 but MySQL does not mantain any history of it.
 My2Collector (my2) is a simple, self contained MySQL statistics collector.
-my2 creates in the my2 schema a table that contains the history of performance statistics.
-my2 automatically executes a Stored Routine every 10 minutes to collect data.
+my2 creates the `my2.status` table that contains the history of performance statistics.
+Every 10 minutes my2 automatically executes a Stored Routine to collect data.
 
 ## Install my2
 
 To install *my2* execute the following command on Your MySQL database:
 
-	`mysql --user=root -pXXX < my2.sql`
+	mysql --user=root -pXXX < my2.sql
+
+For security reasons the user my2 creation is commented out: change the password and create the user!
+my2 user creation is in the last 3 lines of the script.
 
 #### Database structure
 
@@ -25,7 +28,7 @@ my2.status adds a third column `timest` with the timestamp
 
 #### Available statistics
 
-`my2.status` table contains several performance statistics:
+`my2.status` table collects several performance statistics:
 * All numeric GLOBAL_STATUS variables
 * All statement execution counters ("statement/sql/%" from events_statements_summary_global_by_event_name)
 * Some PROCESSLIST information (eg. USER, HOST, COMMAND, STATE)
