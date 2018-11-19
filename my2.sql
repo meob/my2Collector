@@ -6,6 +6,7 @@
 -- 0.0.7a 2018-02-18 substr(EVENT_NAME,15) --> substr(EVENT_NAME,15,60)
 -- 0.0.8  2018-04-01 MySQL v.8.0 support
 -- 0.0.9a 2018-08-15 Delta statistics (useful for Grafana and others), (a) got some useful global_variable
+-- 0.0.10 2018-10-31 Replication Lag (also with multi-threaded slaves)
 
 -- Create Database, Tables, Stored Routines and Jobs for My2 dashboard
 create database IF NOT EXISTS my2;
@@ -45,6 +46,13 @@ if v='5.7' OR v='8.0' then
     where variable_value REGEXP '^-*[[:digit:]]+(\.[[:digit:]]+)?$'
       and variable_name not like 'Performance_schema_%'
       and variable_name not like 'SSL_%';
+  insert into my2.status(variable_name,variable_value,timest) 
+   SELECT 'replication_worker_time', coalesce(max(PROCESSLIST_TIME), 0.1), a
+     FROM performance_schema.threads
+    WHERE (NAME = 'thread/sql/slave_worker'
+            AND (PROCESSLIST_STATE IS NULL
+                  OR PROCESSLIST_STATE != 'Waiting for an event from Coordinator'))
+       OR NAME = 'thread/sql/slave_sql';
 --  *** Comment the following 4 lines with 8.0  ***
  else
   insert into my2.status(variable_name,variable_value,timest) 
