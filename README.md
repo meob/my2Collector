@@ -55,5 +55,5 @@ my2 uses a Scheduled Job which is available since MySQL 5.1 (2008).
 PROCESSLIST table is available since 5.1.7 while GLOBAL_STATUS is available since 5.1.12.
 The PERFORMANCE_SCHEMA was introduced in 5.5 version and greatly enhanched in 5.6 version.
 There are many little differences between different MySQL versions: My2 is aware of them
-and tries to collect all the information available.
+and tries to collect all the information available. For MySQL 8.0 a different script is provided.
 my2 gives its best with MySQL 5.7, MySQL 8.0 and MariaDB 10.x with performance schema enabled.

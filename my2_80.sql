@@ -1,5 +1,5 @@
 -- by mail@meo.bogliolo.name
--- My2 Collector
+-- My2_80 Collector
 -- 0.0.1  2013-02-14 First version for MySQL 5.6
 -- 0.0.6  2017-04-01 DBCPU as SUM_TIMER_WAIT from events_statements_summary_global_by_event_name
 -- 0.0.7  2017-11-01 bug fixed (0 as first value for delta), MariaDB 10.2 support, new custom statistics
@@ -7,7 +7,7 @@
 -- 0.0.8  2018-04-01 MySQL v.8.0 support
 -- 0.0.9a 2018-08-15 Delta statistics (useful for Grafana and others), (a) got some useful global_variable
 -- 0.0.10 2018-10-31 Replication Lag (also with multi-threaded slaves)
--- 0.0.11 2019-05-05 Small changes
+-- 0.0.11 2019-05-05 MySQL v.8 only
 
 -- Create Database, Tables, Stored Routines and Jobs for My2 dashboard
 create database IF NOT EXISTS my2;
@@ -40,26 +40,19 @@ set sql_log_bin = 0;
 set a=now();
 select substr(version(),1,3) into v;
 
-if v='5.7' OR v='8.0' then
-  insert into my2.status(variable_name,variable_value,timest) 
+insert into my2.status(variable_name,variable_value,timest) 
    select upper(variable_name),variable_value, a
      from performance_schema.global_status
     where variable_value REGEXP '^-*[[:digit:]]+(\.[[:digit:]]+)?$'
       and variable_name not like 'Performance_schema_%'
       and variable_name not like 'SSL_%';
-  insert into my2.status(variable_name,variable_value,timest) 
-   SELECT 'replication_worker_time', coalesce(max(PROCESSLIST_TIME), 0.1), a
+insert into my2.status(variable_name,variable_value,timest) 
+   SELECT 'REPLICATION_MAX_WORKER_TIME', coalesce(max(PROCESSLIST_TIME), 0.1), a
      FROM performance_schema.threads
     WHERE (NAME = 'thread/sql/slave_worker'
             AND (PROCESSLIST_STATE IS NULL
                   OR PROCESSLIST_STATE != 'Waiting for an event from Coordinator'))
        OR NAME = 'thread/sql/slave_sql';
---  *** Comment the following 4 lines with 8.0  ***
- else
-  insert into my2.status(variable_name,variable_value,timest) 
-   select variable_name,variable_value,a
-     from information_schema.global_status;
-end if;
 insert into my2.status(variable_name,variable_value,timest) 
  select concat('PROCESSES.',user),count(*),a
    from information_schema.processlist
@@ -76,14 +69,11 @@ insert into my2.status(variable_name,variable_value,timest)
  select substr(concat('PROCESSES_STATE.',state),1,64),count(*),a
    from information_schema.processlist
   group by substr(concat('PROCESSES_STATE.',state),1,64);
-if v='5.6' OR v='5.7' OR v='8.0' OR v='10.' then
-  insert into my2.status(variable_name,variable_value,timest) 
+insert into my2.status(variable_name,variable_value,timest) 
    SELECT 'SUM_TIMER_WAIT', sum(sum_timer_wait*1.0), a
      FROM performance_schema.events_statements_summary_global_by_event_name;
-end if;
 
 -- Delta values
-if v='5.7' OR v='8.0' then
   insert into my2.status(variable_name,variable_value,timest) 
    select concat(upper(s.variable_name),'-d'), greatest(s.variable_value-c.variable_value,0), a
      from performance_schema.global_status s, my2.current c
@@ -127,25 +117,6 @@ if v='5.7' OR v='8.0' then
      from performance_schema.global_variables
     where variable_name in ('max_connections', 'innodb_buffer_pool_size', 'query_cache_size', 
                             'innodb_log_buffer_size', 'key_buffer_size', 'table_open_cache');
- else
-  insert into my2.status(variable_name,variable_value,timest) 
-   select concat(upper(s.variable_name),'-d'), greatest(s.variable_value-c.variable_value,0), a
-     from information_schema.global_status s, my2.current c
-    where s.variable_name=c.variable_name;
-  delete from my2.current;
-  insert into my2.current(variable_name,variable_value) 
-   select upper(variable_name),variable_value+0
-     from information_schema.global_status
-    where variable_value REGEXP '^-*[[:digit:]]+(\.[[:digit:]]+)?$'
-      and variable_name not like 'Performance_schema_%'
-      and variable_name not like 'SSL_%';
-  insert into my2.current(variable_name,variable_value) 
-   select upper(variable_name),variable_value
-     from information_schema.global_variables
-    where variable_name in ('max_connections', 'innodb_buffer_pool_size', 'query_cache_size', 
-                            'innodb_log_buffer_size', 'key_buffer_size', 'table_open_cache');
-end if;
-
 set sql_log_bin = 1;
 END //
 DELIMITER ; //
@@ -182,9 +153,6 @@ DROP EVENT IF EXISTS collect_daily_stats;
 CREATE EVENT collect_daily_stats
     ON SCHEDULE EVERY 1 DAY
     DO call collect_daily_stats();
-
-ALTER EVENT collect_stats ENABLE;
-ALTER EVENT collect_daily_stats ENABLE;
 set sql_log_bin = 1;
 
 -- Use a specific user (suggested)
