@@ -10,16 +10,18 @@ Every 10 minutes my2 automatically executes a Stored Routine to collect data.
 
 ## Install my2
 
-To install *my2* execute the following command on Your MySQL database:
+To install *my2Collector* execute the following command on Your MySQL database:
 
 	mysql --user=root -pXXX < my2.sql
 
-For security reasons the user my2 creation is commented out: change the password and create the user!
+For security reasons the creation of the user my2 is commented out: change the password and create the user!
+
 my2 user creation is in the last 3 lines of the script.
+
 
 #### Database structure
 
-`my2.status` table has the same columns of MySQL GLOBAL_STATUS:
+`my2.status` table has columns similar to the MySQL GLOBAL_STATUS system table:
 * variable_name
 * variable_value
 
@@ -34,8 +36,8 @@ my2.status adds a third column `timest` with the timestamp
 * Some PROCESSLIST information (eg. USER, HOST, COMMAND, STATE)
 * Some summary statistic (eg. sum_timer_wait from events_statements_summary_global_by_event_name)
 * Some GLOBAL_VARIABLE variables
-* Delta values for most used counters
-* Database size (this statistic is collected daily and not every 10 minutes)
+* Delta values for most used counters using `my2.current` stage table
+* Database size (collected daily and not every 10 minutes)
 * And other useful stats...
 
 
