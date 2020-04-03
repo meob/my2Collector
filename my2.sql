@@ -5,9 +5,10 @@
 -- 0.0.7  2017-11-01 bug fixed (0 as first value for delta), MariaDB 10.2 support, new custom statistics
 -- 0.0.7a 2018-02-18 substr(EVENT_NAME,15) --> substr(EVENT_NAME,15,60)
 -- 0.0.8  2018-04-01 MySQL v.8.0 support
--- 0.0.9a 2018-08-15 Delta statistics (useful for Grafana and others), (a) got some useful global_variable
--- 0.0.10 2018-10-31 Replication Lag (also with multi-threaded slaves)
--- 0.0.11 2019-05-05 Small changes
+-- 0.0.9a 2018-08-15 Delta statistics (useful for Grafana), (a) got some useful global_variable
+-- 0.0.10 2018-10-31 Replication Lag (with multi-threaded slaves), (a) changed a variable name
+-- 0.0.11 2019-05-05 Small changes (uppercase variables, enable events)
+-- 0.0.12 2020-01-01 Host column, MariaDB 10.x better support
 
 -- Create Database, Tables, Stored Routines and Jobs for My2 dashboard
 create database IF NOT EXISTS my2;
@@ -15,6 +16,7 @@ use my2;
 CREATE TABLE IF NOT EXISTS status (
   VARIABLE_NAME varchar(64) CHARACTER SET utf8 NOT NULL DEFAULT '',
   VARIABLE_VALUE varchar(1024) CHARACTER SET utf8 DEFAULT NULL,
+  HOST varchar(128) CHARACTER SET utf8 DEFAULT 'MyHost',   -- concat(@@hostname, ':', @@port),
   TIMEST timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
@@ -24,7 +26,7 @@ CREATE TABLE IF NOT EXISTS current (
 ) ENGINE=InnoDB;
 
 ALTER TABLE status
- ADD unique KEY idx01 (VARIABLE_NAME,timest);
+ ADD unique KEY idx01 (VARIABLE_NAME,timest,host);
 -- delete from my2.status where VARIABLE_NAME like 'PROCESSES_HOSTS.%';
 -- update my2.status set variable_value=0, timest=timest where VARIABLE_NAME like '%-d' and variable_value<0;
 ALTER TABLE current
@@ -36,7 +38,7 @@ CREATE PROCEDURE collect_stats()
 BEGIN
 DECLARE a datetime;
 DECLARE v varchar(10);
-set sql_log_bin = 0;
+-- set sql_log_bin = 0;
 set a=now();
 select substr(version(),1,3) into v;
 
@@ -48,7 +50,7 @@ if v='5.7' OR v='8.0' then
       and variable_name not like 'Performance_schema_%'
       and variable_name not like 'SSL_%';
   insert into my2.status(variable_name,variable_value,timest) 
-   SELECT 'replication_worker_time', coalesce(max(PROCESSLIST_TIME), 0.1), a
+   SELECT 'REPLICATION_MAX_WORKER_TIME', coalesce(max(PROCESSLIST_TIME), 0.1), a
      FROM performance_schema.threads
     WHERE (NAME = 'thread/sql/slave_worker'
             AND (PROCESSLIST_STATE IS NULL
@@ -98,11 +100,12 @@ if v='5.7' OR v='8.0' then
      FROM performance_schema.events_statements_summary_global_by_event_name, my2.current c
     WHERE c.variable_name='SUM_TIMER_WAIT';
   insert into my2.status(variable_name, variable_value, timest) 
-   select 'REPLICATION_CONNECTION_STATUS',if(SERVICE_STATE='ON', 1, 0),a
+   select 'REPLICATION_CONNECTION_STATUS', if(SERVICE_STATE='ON', 1, 0),a
      from performance_schema.replication_connection_status;
   insert into my2.status(variable_name, variable_value, timest) 
-   select 'REPLICATION_APPLIER_STATUS',if(SERVICE_STATE='ON', 1, 0),a
+   select 'REPLICATION_APPLIER_STATUS', if(SERVICE_STATE='ON', 1, 0),a
      from performance_schema.replication_applier_status;
+
   delete from my2.current;
   insert into my2.current(variable_name,variable_value) 
    select upper(variable_name),variable_value+0
@@ -146,7 +149,7 @@ if v='5.7' OR v='8.0' then
                             'innodb_log_buffer_size', 'key_buffer_size', 'table_open_cache');
 end if;
 
-set sql_log_bin = 1;
+-- set sql_log_bin = 1;
 END //
 DELIMITER ; //
 
@@ -156,7 +159,7 @@ DELIMITER // ;
 CREATE PROCEDURE collect_daily_stats()
 BEGIN
 DECLARE a datetime;
-set sql_log_bin = 0;
+-- set sql_log_bin = 0;
 set a=now();
 insert into my2.status(variable_name,variable_value,timest)
  select concat('SIZEDB.',table_schema), sum(data_length+index_length), a
@@ -166,14 +169,14 @@ insert into my2.status(variable_name,variable_value,timest)
    from information_schema.tables;
 delete from my2.status where timest < date_sub(now(), INTERVAL 62 DAY) and variable_name <>'SIZEDB.TOTAL';
 delete from my2.status where timest < date_sub(now(), INTERVAL 365 DAY);
-set sql_log_bin = 1;
+-- set sql_log_bin = 1;
 END //
 DELIMITER ; //
 
 -- The event scheduler must also be activated in the my.cnf (event_scheduler=1)
 set global event_scheduler=1;
 
-set sql_log_bin = 0;
+-- set sql_log_bin = 0;
 DROP EVENT IF EXISTS collect_stats;
 CREATE EVENT collect_stats
     ON SCHEDULE EVERY 10 Minute
@@ -185,7 +188,7 @@ CREATE EVENT collect_daily_stats
 
 ALTER EVENT collect_stats ENABLE;
 ALTER EVENT collect_daily_stats ENABLE;
-set sql_log_bin = 1;
+-- set sql_log_bin = 1;
 
 -- Use a specific user (suggested)
 -- create user my2@'%' identified by 'P1e@seCh@ngeMe';
