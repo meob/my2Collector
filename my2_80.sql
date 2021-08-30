@@ -8,6 +8,7 @@
 -- 0.0.9a 2018-08-15 Delta statistics (useful for Grafana and others), (a) got some useful global_variable
 -- 0.0.10 2018-10-31 Replication Lag (also with multi-threaded slaves)
 -- 0.0.11 2019-05-05 MySQL v.8 only
+-- 0.0.12 2021-06-22 grants on performance_schema (needed for 8.x)
 
 -- Create Database, Tables, Stored Routines and Jobs for My2 dashboard
 create database IF NOT EXISTS my2;
@@ -158,3 +159,4 @@ set sql_log_bin = 1;
 -- Use a specific user (suggested)
 -- create user my2@'%' identified by 'P1e@seCh@ngeMe';
 -- grant all on my2.* to my2@'%';
+-- grant select on performance_schema.* to my2@'%';
